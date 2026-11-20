@@ -88,5 +88,11 @@ domain objects on load. Avoid direct reflective Gson serialization of Optional
 or Java date objects. Preserve original currency, rate date and pending state.
 Only ApplicationBuilder needs to swap in the durable repository.
 
-GitHub PR/review and a short personal walkthrough are still needed for the full
-individual milestone evidence. A class skeleton alone is not a complete use case.
+GitHub evidence:
+- Transactions PR: https://github.com/Chrisgg1216/CSC207_Projects/pull/2
+- Teammate PR review (with reproduced validation issue):
+  https://github.com/Chrisgg1216/CSC207_Projects/pull/1#pullrequestreview-5985399978
+
+The remaining personal step is to understand and demonstrate this use case to
+your TA. Team members must supply their own code/PR/review evidence; this work
+does not establish their individual milestone completion.

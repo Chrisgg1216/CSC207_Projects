@@ -3,10 +3,16 @@ package app;
 import adapter.BudgetController;
 import adapter.BudgetPresenter;
 import adapter.BudgetViewModel;
+import adapter.TransactionController;
+import adapter.TransactionPresenter;
+import adapter.TransactionViewModel;
+import framework.BankOfCanadaExchangeRateGateway;
+import framework.InMemoryTransactionDataAccess;
+import framework.TransactionSpendingDataAccess;
+import framework.TransactionsPanel;
 import framework.BudgetPanel;
 import framework.InMemoryBudgetDataAccess;
 import framework.InMemoryCategoryDataAccess;
-import framework.InMemorySpendingDataAccess;
 import framework.PlaceholderPane;
 import javafx.scene.Node;
 import javafx.scene.control.Tab;
@@ -16,8 +22,10 @@ import usecase.port.BudgetDataAccess;
 import usecase.port.CategoryDataAccess;
 import usecase.port.SpendingDataAccess;
 import usecase.set_budget.SetBudgetInteractor;
+import usecase.add_transaction.AddTransactionInteractor;
+import usecase.port.TransactionDataAccess;
 
-import java.time.YearMonth;
+import java.time.Clock;
 
 /**
  * The only place that knows every concrete class. It creates the data access
@@ -37,7 +45,8 @@ public class ApplicationBuilder {
     private final BudgetDataAccess budgetStorage = new InMemoryBudgetDataAccess();
     private final CategoryDataAccess categories = new InMemoryCategoryDataAccess();
     // Person A: replace with an adapter over TransactionDataAccess.
-    private final SpendingDataAccess spending = createDemoSpending();
+    private final TransactionDataAccess transactions = new InMemoryTransactionDataAccess();
+    private final SpendingDataAccess spending = new TransactionSpendingDataAccess(transactions);
 
     public TabPane buildTabs() {
         TabPane tabs = new TabPane();
@@ -46,7 +55,7 @@ public class ApplicationBuilder {
                 tab("Transactions", buildTransactionsView()),
                 tab("Budget", buildBudgetView()),
                 tab("Summary", buildSummaryView()));
-        tabs.getSelectionModel().select(1);
+        tabs.getSelectionModel().select(0);
         return tabs;
     }
 
@@ -61,11 +70,14 @@ public class ApplicationBuilder {
         return new BudgetPanel(controller, viewModel, categories.findAllNames());
     }
 
-    /** Person A: replace with the real Transactions panel (AddTransaction, Edit/Delete, FX). */
+    /** Person A: one shared repository supplies both Transactions and Budget. */
     private Node buildTransactionsView() {
-        return new PlaceholderPane("Transactions", "Person A",
-                "Add, edit and delete income and spending in any currency, with the exchange rate "
-                        + "and converted amount shown.");
+        TransactionViewModel viewModel = new TransactionViewModel();
+        TransactionPresenter presenter = new TransactionPresenter(viewModel);
+        TransactionController controller = new TransactionController(new AddTransactionInteractor(
+                transactions, categories, new BankOfCanadaExchangeRateGateway(), presenter,
+                Clock.systemDefaultZone()));
+        return new TransactionsPanel(controller, viewModel, categories.findAllNames());
     }
 
     /** Person C: replace with the real Summary panel (GetMonthlySummary, ExportCsv). */
@@ -80,14 +92,4 @@ public class ApplicationBuilder {
         return tab;
     }
 
-    /** Fixed demo numbers so the Budget tab can show OK, WARNING and OVER. */
-    private static SpendingDataAccess createDemoSpending() {
-        InMemorySpendingDataAccess demo = new InMemorySpendingDataAccess();
-        YearMonth now = YearMonth.now();
-        demo.setSpent("Food", now, "170.00");
-        demo.setSpent("Rent", now, "1250.00");
-        demo.setSpent("Transport", now, "40.00");
-        demo.setPendingConversion(1);
-        return demo;
-    }
 }

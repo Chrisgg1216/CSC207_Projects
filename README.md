@@ -17,8 +17,14 @@ Run the tests using Maven's `test` lifecycle goal (or `mvn test`).
 - Budget: uses the same transaction store. Select the month and click **Refresh
   status** after adding a transaction. Income and pending conversions are excluded
   from spending totals.
-- Records are currently in memory and reset on exit. JSON persistence, Summary,
-  category management and CSV export are Person C's integration work.
+- Summary: choose any date in the month to see income, spending, net, category
+  totals and the underlying transactions. Pending conversions stay visible in
+  the list and are flagged as excluded from the totals.
+- To demo Summary, add November spending of 20 CAD and 30 CAD in Food and 10 CAD
+  in Transport, plus a transaction dated in October. Open Summary and select a
+  November date. Expected spending: 60 CAD (Food 50 CAD, Transport 10 CAD).
+- Records are currently in memory and reset on exit. JSON persistence, category
+  management and CSV export are follow-up work.
 - Editing/deleting transactions, conversion retry and changing the CAD base
   currency are later work, not completed by this milestone prototype.
 

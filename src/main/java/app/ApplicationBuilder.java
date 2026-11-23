@@ -3,6 +3,9 @@ package app;
 import adapter.BudgetController;
 import adapter.BudgetPresenter;
 import adapter.BudgetViewModel;
+import adapter.MonthlySummaryController;
+import adapter.MonthlySummaryPresenter;
+import adapter.MonthlySummaryViewModel;
 import adapter.TransactionController;
 import adapter.TransactionPresenter;
 import adapter.TransactionViewModel;
@@ -13,11 +16,12 @@ import framework.TransactionsPanel;
 import framework.BudgetPanel;
 import framework.InMemoryBudgetDataAccess;
 import framework.InMemoryCategoryDataAccess;
-import framework.PlaceholderPane;
+import framework.MonthlySummaryPanel;
 import javafx.scene.Node;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import usecase.check_budget.CheckBudgetInteractor;
+import usecase.monthly_summary.MonthlySummaryInteractor;
 import usecase.port.BudgetDataAccess;
 import usecase.port.CategoryDataAccess;
 import usecase.port.SpendingDataAccess;
@@ -51,10 +55,17 @@ public class ApplicationBuilder {
     public TabPane buildTabs() {
         TabPane tabs = new TabPane();
         tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+        MonthlySummaryPanel summary = buildSummaryView();
+        Tab summaryTab = tab("Summary", summary);
+        summaryTab.setOnSelectionChanged(event -> {
+            if (summaryTab.isSelected()) {
+                summary.refresh();
+            }
+        });
         tabs.getTabs().addAll(
                 tab("Transactions", buildTransactionsView()),
                 tab("Budget", buildBudgetView()),
-                tab("Summary", buildSummaryView()));
+                summaryTab);
         tabs.getSelectionModel().select(0);
         return tabs;
     }
@@ -80,10 +91,13 @@ public class ApplicationBuilder {
         return new TransactionsPanel(controller, viewModel, categories.findAllNames());
     }
 
-    /** Person C: replace with the real Summary panel (GetMonthlySummary, ExportCsv). */
-    private Node buildSummaryView() {
-        return new PlaceholderPane("Summary", "Person C",
-                "Monthly income, spending, balance and category shares; export to CSV.");
+    /** Person C: refresh the monthly summary from the shared transaction store. */
+    private MonthlySummaryPanel buildSummaryView() {
+        MonthlySummaryViewModel viewModel = new MonthlySummaryViewModel();
+        MonthlySummaryPresenter presenter = new MonthlySummaryPresenter(viewModel);
+        MonthlySummaryController controller = new MonthlySummaryController(
+                new MonthlySummaryInteractor(transactions, presenter, BASE_CURRENCY));
+        return new MonthlySummaryPanel(controller, viewModel);
     }
 
     private static Tab tab(String title, Node content) {

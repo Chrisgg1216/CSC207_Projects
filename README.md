@@ -1,6 +1,6 @@
 # CSC207_Projects
 
-Java 17+ / Maven / JavaFX budgeting application with Transactions, Budget and Summary tabs.
+Java 17+ / Maven / Swing budgeting application with Transactions, Budget and Summary tabs.
 
 ## Run
 

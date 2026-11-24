@@ -1,14 +1,11 @@
 package app;
 
-import javafx.application.Application;
+import javax.swing.SwingUtilities;
 
-/**
- * Starts MainApp. This class does not extend Application, so it can be run
- * directly from the IDE with JavaFX on the classpath.
- */
+/** Starts the app. Run this class from the IDE. */
 public class Launcher {
 
     public static void main(String[] args) {
-        Application.launch(MainApp.class, args);
+        SwingUtilities.invokeLater(MainApp::show);
     }
 }

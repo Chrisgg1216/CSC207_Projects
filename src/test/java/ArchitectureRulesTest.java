@@ -45,16 +45,16 @@ class ArchitectureRulesTest {
 
     @Test
     void entitiesDependOnNothingOutward() throws IOException {
-        assertNoImports("entity", List.of("usecase", "adapter", "framework", "app", "javafx", "java.sql", "java.net"));
+        assertNoImports("entity", List.of("usecase", "adapter", "framework", "app", "javax.swing", "java.awt", "java.sql", "java.net"));
     }
 
     @Test
-    void useCasesDoNotKnowAdaptersFrameworkOrJavaFx() throws IOException {
-        assertNoImports("usecase", List.of("adapter", "framework", "app", "javafx", "java.sql", "java.net", "java.io"));
+    void useCasesDoNotKnowAdaptersFrameworkOrSwing() throws IOException {
+        assertNoImports("usecase", List.of("adapter", "framework", "app", "javax.swing", "java.awt", "java.sql", "java.net", "java.io"));
     }
 
     @Test
-    void adaptersDoNotKnowFrameworkOrJavaFx() throws IOException {
-        assertNoImports("adapter", List.of("framework", "app", "javafx", "java.sql", "java.net", "java.io"));
+    void adaptersDoNotKnowFrameworkOrSwing() throws IOException {
+        assertNoImports("adapter", List.of("framework", "app", "javax.swing", "java.awt", "java.sql", "java.net", "java.io"));
     }
 }

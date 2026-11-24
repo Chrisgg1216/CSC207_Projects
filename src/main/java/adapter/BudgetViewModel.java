@@ -5,7 +5,7 @@ import java.beans.PropertyChangeSupport;
 import java.util.List;
 
 /**
- * State shown by the budget screen. No JavaFX here, so it can be tested directly.
+ * State shown by the budget screen. No Swing here, so it can be tested directly.
  * The view listens for the "lines" and "message" property changes.
  */
 public class BudgetViewModel {

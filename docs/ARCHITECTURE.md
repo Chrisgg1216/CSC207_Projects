@@ -7,7 +7,7 @@ Source code depends only inward: `framework -> adapter -> usecase -> entity`.
 
 ```
 +--------------------------------------------------------------+
-| framework  JavaFX panels, in-memory / JSON storage, CSV,     |
+| framework  Swing panels, in-memory / JSON storage, CSV,     |
 |            exchange-rate HTTP client                         |
 |  +--------------------------------------------------------+  |
 |  | adapter  Controller, Presenter, ViewModel              |  |
@@ -23,7 +23,7 @@ Source code depends only inward: `framework -> adapter -> usecase -> entity`.
 ```
 
 `ArchitectureRulesTest` fails the build if `entity`, `usecase` or `adapter` import a layer
-they must not know (JavaFX, `java.io`, `java.sql`, `java.net`, an outer package).
+they must not know (Swing/AWT, `java.io`, `java.sql`, `java.net`, an outer package).
 
 ## Packages
 
@@ -59,7 +59,7 @@ CheckBudgetStatus follows the same path. The Interactor also calls `SpendingData
 
 ## Why it is built this way
 
-- **Dependency inversion:** Interactors depend on port interfaces, not on JSON, HTTP or JavaFX.
+- **Dependency inversion:** Interactors depend on port interfaces, not on JSON, HTTP or Swing.
   Storage or the exchange-rate provider can change without touching a use case.
 - **Testability:** use case tests use fakes (see `TestSupport`), so they need no files, UI or internet.
 - **Single responsibility:** the Controller reads input, the Interactor applies rules, the Presenter
@@ -72,6 +72,6 @@ CheckBudgetStatus follows the same path. The Interactor also calls `SpendingData
 1. Add entities to `entity/` (use the shared `Money`).
 2. Add `usecase/<your_use_case>/` with the five boundary/interactor classes and any new port in `usecase/port/`.
 3. Add Controller, Presenter and ViewModel to `adapter/`.
-4. Add the JavaFX panel and storage/HTTP implementation to `framework/`.
+4. Add the Swing panel and storage/HTTP implementation to `framework/`.
 5. In `ApplicationBuilder`, add a `buildXxxView()` method and replace the `PlaceholderPane` for your tab.
 6. Run `mvn test`; `ArchitectureRulesTest` must still pass.

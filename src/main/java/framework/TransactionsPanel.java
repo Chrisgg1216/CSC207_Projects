@@ -3,105 +3,154 @@ package framework;
 import adapter.TransactionController;
 import adapter.TransactionViewModel;
 import entity.TransactionType;
-import javafx.application.Platform;
-import javafx.collections.FXCollections;
-import javafx.concurrent.Task;
-import javafx.geometry.Insets;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.DatePicker;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.FlowPane;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
 
+import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import javax.swing.SwingWorker;
+import java.awt.BorderLayout;
+import java.awt.Component;
+import java.awt.FlowLayout;
 import java.time.LocalDate;
 import java.util.List;
 
-/** Add transactions without blocking the JavaFX application thread during HTTP. */
-public class TransactionsPanel extends VBox {
+/** Add transactions without blocking the Swing event thread during HTTP. */
+public class TransactionsPanel extends JPanel {
     private final TransactionViewModel viewModel;
-    private final ListView<String> list = new ListView<>();
-    private final Label message = new Label();
+    private final DefaultListModel<String> listModel = new DefaultListModel<>();
+    private final JList<String> list = new JList<>(listModel);
+    private final JTextArea message = new JTextArea(2, 40);
+    private final JButton add = new JButton("Add transaction");
+    private final JButton refresh = new JButton("Refresh list");
 
     public TransactionsPanel(TransactionController controller, TransactionViewModel viewModel,
                              List<String> categoryNames) {
+        super(new BorderLayout(8, 8));
         this.viewModel = viewModel;
-        setSpacing(10);
-        setPadding(new Insets(12));
-        DatePicker date = new DatePicker(LocalDate.now());
-        date.setEditable(false);
-        date.setAccessibleText("Transaction date");
-        ComboBox<TransactionType> type = new ComboBox<>(FXCollections.observableArrayList(TransactionType.values()));
-        type.setValue(TransactionType.SPENDING);
-        type.setAccessibleText("Income or spending");
-        ComboBox<String> category = new ComboBox<>(FXCollections.observableArrayList(categoryNames));
-        category.setPromptText("Category");
-        category.setAccessibleText("Transaction category");
-        TextField amount = new TextField();
-        amount.setPromptText("Amount");
-        amount.setPrefColumnCount(8);
-        amount.setAccessibleText("Original amount");
-        ComboBox<String> currency = new ComboBox<>(FXCollections.observableArrayList("CAD", "USD", "CNY"));
-        currency.setValue("CAD");
-        currency.setAccessibleText("Original currency");
-        TextField note = new TextField();
-        note.setPromptText("Note (optional)");
-        note.setAccessibleText("Transaction note");
-        Button add = new Button("Add transaction");
-        Button refresh = new Button("Refresh list");
-        refresh.setOnAction(event -> controller.refresh());
-        FlowPane form = new FlowPane(8, 8, date, type, category, amount, currency, note, add, refresh);
-        add.setOnAction(event -> {
-            LocalDate selectedDate = date.getValue();
-            TransactionType selectedType = type.getValue();
-            String selectedCategory = category.getValue();
+        setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
+
+        JSpinner date = DateSpinners.create("Transaction date");
+        JComboBox<TransactionType> type = new JComboBox<>(TransactionType.values());
+        type.setSelectedItem(TransactionType.SPENDING);
+        type.getAccessibleContext().setAccessibleName("Income or spending");
+        JComboBox<String> category = new JComboBox<>(categoryNames.toArray(new String[0]));
+        category.setSelectedIndex(-1);
+        category.getAccessibleContext().setAccessibleName("Transaction category");
+        JTextField amount = new JTextField(8);
+        amount.getAccessibleContext().setAccessibleName("Original amount");
+        JComboBox<String> currency = new JComboBox<>(new String[] {"CAD", "USD", "CNY"});
+        currency.setSelectedItem("CAD");
+        currency.getAccessibleContext().setAccessibleName("Original currency");
+        JTextField note = new JTextField(20);
+        note.getAccessibleContext().setAccessibleName("Transaction note, optional");
+
+        JPanel row1 = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+        row1.add(label("Date:", date));
+        row1.add(date);
+        row1.add(label("Type:", type));
+        row1.add(type);
+        row1.add(label("Category:", category));
+        row1.add(category);
+        row1.add(label("Amount:", amount));
+        row1.add(amount);
+        row1.add(currency);
+        JPanel row2 = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+        row2.add(label("Note (optional):", note));
+        row2.add(note);
+        row2.add(add);
+        row2.add(refresh);
+
+        JPanel form = new JPanel();
+        form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
+        JLabel title = new JLabel("Transactions — base currency CAD");
+        JLabel prototypeNote = new JLabel("Milestone prototype: records are kept in memory for this session.");
+        for (JComponent part : new JComponent[] {title, prototypeNote, row1, row2}) {
+            part.setAlignmentX(Component.LEFT_ALIGNMENT);
+            form.add(part);
+        }
+
+        refresh.addActionListener(event -> controller.refresh());
+        add.addActionListener(event -> {
+            LocalDate selectedDate = DateSpinners.toLocalDate(date);
+            TransactionType selectedType = (TransactionType) type.getSelectedItem();
+            String selectedCategory = (String) category.getSelectedItem();
             String selectedAmount = amount.getText();
-            String selectedCurrency = currency.getValue();
+            String selectedCurrency = (String) currency.getSelectedItem();
             String selectedNote = note.getText();
-            add.setDisable(true);
-            refresh.setDisable(true);
+            setBusy(true);
             message.setText("Saving transaction; checking historical exchange rate if needed…");
-            Task<Void> task = new Task<>() {
+            new SwingWorker<Void, Void>() {
                 @Override
-                protected Void call() {
+                protected Void doInBackground() {
                     controller.add(selectedDate, selectedType, selectedCategory, selectedAmount,
                             selectedCurrency, selectedNote);
                     return null;
                 }
-            };
-            task.setOnSucceeded(done -> {
-                add.setDisable(false);
-                refresh.setDisable(false);
-                render();
-                if (!viewModel.isError()) {
-                    amount.clear();
-                    note.clear();
+
+                @Override
+                protected void done() {
+                    setBusy(false);
+                    try {
+                        get();
+                    } catch (Exception ex) {
+                        viewModel.update(viewModel.getLines(),
+                                "Could not complete the operation. Refresh the list before retrying.", true);
+                    }
+                    render();
+                    if (!viewModel.isError()) {
+                        amount.setText("");
+                        note.setText("");
+                    }
                 }
-            });
-            task.setOnFailed(done -> {
-                add.setDisable(false);
-                refresh.setDisable(false);
-                viewModel.update(viewModel.getLines(), "Could not complete the operation. Refresh the list before retrying.", true);
-            });
-            Thread worker = new Thread(task, "add-transaction");
-            worker.setDaemon(true);
-            worker.start();
+            }.execute();
         });
-        list.setPlaceholder(new Label("No transactions yet. Add your first income or spending record."));
-        list.setAccessibleText("Transactions with original amount, reference CAD amount and conversion status");
-        message.setWrapText(true);
-        VBox.setVgrow(list, Priority.ALWAYS);
-        getChildren().addAll(new Label("Transactions — base currency CAD"),
-                new Label("Milestone prototype: records are kept in memory for this session."), form, list, message);
-        viewModel.addPropertyChangeListener(event -> Platform.runLater(this::render));
+
+        list.getAccessibleContext().setAccessibleName(
+                "Transactions with original amount, reference CAD amount and conversion status");
+        message.setEditable(false);
+        message.setLineWrap(true);
+        message.setWrapStyleWord(true);
+        message.setOpaque(false);
+        message.getAccessibleContext().setAccessibleName("Message");
+
+        add(form, BorderLayout.NORTH);
+        add(new JScrollPane(list), BorderLayout.CENTER);
+        add(message, BorderLayout.SOUTH);
+
+        viewModel.addPropertyChangeListener(event -> SwingUtilities.invokeLater(this::render));
         controller.refresh();
     }
 
+    private static JLabel label(String text, Component target) {
+        JLabel label = new JLabel(text);
+        label.setLabelFor(target);
+        return label;
+    }
+
+    private void setBusy(boolean busy) {
+        add.setEnabled(!busy);
+        refresh.setEnabled(!busy);
+    }
+
     private void render() {
-        list.setItems(FXCollections.observableArrayList(viewModel.getLines()));
+        listModel.clear();
+        for (String line : viewModel.getLines()) {
+            listModel.addElement(line);
+        }
+        if (listModel.isEmpty()) {
+            listModel.addElement("No transactions yet. Add your first income or spending record.");
+        }
         message.setText((viewModel.isError() ? "Error: " : "") + viewModel.getMessage());
     }
 }

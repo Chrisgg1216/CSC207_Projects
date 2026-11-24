@@ -17,9 +17,8 @@ import framework.BudgetPanel;
 import framework.InMemoryBudgetDataAccess;
 import framework.InMemoryCategoryDataAccess;
 import framework.MonthlySummaryPanel;
-import javafx.scene.Node;
-import javafx.scene.control.Tab;
-import javafx.scene.control.TabPane;
+import javax.swing.JComponent;
+import javax.swing.JTabbedPane;
 import usecase.check_budget.CheckBudgetInteractor;
 import usecase.monthly_summary.MonthlySummaryInteractor;
 import usecase.port.BudgetDataAccess;
@@ -52,26 +51,24 @@ public class ApplicationBuilder {
     private final TransactionDataAccess transactions = new InMemoryTransactionDataAccess();
     private final SpendingDataAccess spending = new TransactionSpendingDataAccess(transactions);
 
-    public TabPane buildTabs() {
-        TabPane tabs = new TabPane();
-        tabs.setTabClosingPolicy(TabPane.TabClosingPolicy.UNAVAILABLE);
+    public JTabbedPane buildTabs() {
+        JTabbedPane tabs = new JTabbedPane();
         MonthlySummaryPanel summary = buildSummaryView();
-        Tab summaryTab = tab("Summary", summary);
-        summaryTab.setOnSelectionChanged(event -> {
-            if (summaryTab.isSelected()) {
+        tabs.addTab("Transactions", buildTransactionsView());
+        tabs.addTab("Budget", buildBudgetView());
+        tabs.addTab("Summary", summary);
+        // The Summary reads the shared transactions, so refresh it whenever its tab is opened.
+        tabs.addChangeListener(event -> {
+            if (tabs.getSelectedComponent() == summary) {
                 summary.refresh();
             }
         });
-        tabs.getTabs().addAll(
-                tab("Transactions", buildTransactionsView()),
-                tab("Budget", buildBudgetView()),
-                summaryTab);
-        tabs.getSelectionModel().select(0);
+        tabs.setSelectedIndex(0);
         return tabs;
     }
 
     /** Person B (budgets and alerts). */
-    private Node buildBudgetView() {
+    private JComponent buildBudgetView() {
         BudgetViewModel viewModel = new BudgetViewModel();
         BudgetPresenter presenter = new BudgetPresenter(viewModel);
         BudgetController controller = new BudgetController(
@@ -82,7 +79,7 @@ public class ApplicationBuilder {
     }
 
     /** Person A: one shared repository supplies both Transactions and Budget. */
-    private Node buildTransactionsView() {
+    private JComponent buildTransactionsView() {
         TransactionViewModel viewModel = new TransactionViewModel();
         TransactionPresenter presenter = new TransactionPresenter(viewModel);
         TransactionController controller = new TransactionController(new AddTransactionInteractor(
@@ -100,10 +97,5 @@ public class ApplicationBuilder {
         return new MonthlySummaryPanel(controller, viewModel);
     }
 
-    private static Tab tab(String title, Node content) {
-        Tab tab = new Tab(title, content);
-        tab.setClosable(false);
-        return tab;
-    }
 
 }

@@ -21,6 +21,14 @@ public final class MonthlySummaryViewModel {
         changes.firePropertyChange("state", previous, newState);
     }
 
+    void showExportResult(String message) {
+        changes.firePropertyChange("exportResult", null, message);
+    }
+
+    public void addExportListener(PropertyChangeListener listener) {
+        changes.addPropertyChangeListener("exportResult", listener);
+    }
+
     public void addStateListener(PropertyChangeListener listener) {
         changes.addPropertyChangeListener("state", listener);
     }

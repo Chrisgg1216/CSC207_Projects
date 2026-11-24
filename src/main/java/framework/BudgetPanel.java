@@ -5,6 +5,7 @@ import adapter.BudgetViewModel;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -103,14 +104,22 @@ public class BudgetPanel extends JPanel {
         render();
     }
 
+    public void refresh(List<String> categories) {
+        Object selected = categoryBox.getSelectedItem();
+        categoryBox.setModel(new DefaultComboBoxModel<>(categories.toArray(String[]::new)));
+        categoryBox.setSelectedItem(selected != null && categories.contains(selected) ? selected : null);
+        refresh();
+    }
+
     private void onSetBudget() {
         YearMonth month = readMonth();
         if (month == null) {
             return;
         }
         controller.setBudget((String) categoryBox.getSelectedItem(), month, limitField.getText());
-        // Show the new status straight away so a warning appears immediately.
-        controller.checkBudget(month);
+        if (!viewModel.isError()) {
+            controller.checkBudget(month);
+        }
     }
 
     private void onRefresh() {

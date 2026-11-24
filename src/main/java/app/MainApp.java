@@ -1,6 +1,9 @@
 package app;
 
+import usecase.port.LedgerAccessException;
+
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 
@@ -14,7 +17,13 @@ public class MainApp {
     public static void show() {
         JFrame frame = new JFrame("Budgeting App");
         frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        frame.setContentPane(new ApplicationBuilder().buildTabs());
+        try {
+            frame.setContentPane(new ApplicationBuilder().buildTabs());
+        } catch (LedgerAccessException ex) {
+            frame.dispose();
+            JOptionPane.showMessageDialog(null, ex.getMessage(), "Could not open ledger", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
         frame.setSize(960, 520);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);

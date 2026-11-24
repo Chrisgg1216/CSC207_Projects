@@ -1,13 +1,14 @@
 package adapter;
 
 import entity.Transaction;
+import usecase.export_csv.ExportCsvOutputBoundary;
 import usecase.monthly_summary.MonthlySummaryOutputBoundary;
 import usecase.monthly_summary.MonthlySummaryOutputData;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-public final class MonthlySummaryPresenter implements MonthlySummaryOutputBoundary {
+public final class MonthlySummaryPresenter implements MonthlySummaryOutputBoundary, ExportCsvOutputBoundary {
     private static final DateTimeFormatter MONTH_FORMAT = DateTimeFormatter.ofPattern("MMMM uuuu");
     private final MonthlySummaryViewModel viewModel;
 
@@ -34,6 +35,11 @@ public final class MonthlySummaryPresenter implements MonthlySummaryOutputBounda
         }
         viewModel.setState(new MonthlySummaryViewModel.State(summary.month().format(MONTH_FORMAT),
                 totals, categories, transactions, message));
+    }
+
+    @Override
+    public void showExportResult(String message) {
+        viewModel.showExportResult(message);
     }
 
     private static String formatTransaction(Transaction transaction) {

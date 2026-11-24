@@ -7,6 +7,7 @@ import usecase.port.CategoryDataAccess;
 import usecase.port.ExchangeRateGateway;
 import usecase.port.ExchangeRateUnavailableException;
 import usecase.port.SpendingChangeNotifier;
+import usecase.port.LedgerAccessException;
 import usecase.port.TransactionDataAccess;
 
 import java.math.BigDecimal;
@@ -65,7 +66,12 @@ public class AddTransactionInteractor implements AddTransactionInputBoundary {
         }
         Transaction transaction = new Transaction(UUID.randomUUID().toString(), input.date(), input.type(),
                 input.categoryName(), new Money(input.amount(), currency), quote, input.note());
-        transactions.save(transaction);
+        try {
+            transactions.save(transaction);
+        } catch (LedgerAccessException ex) {
+            presenter.prepareFailView(ex.getMessage());
+            return;
+        }
         String message = quote.isPresent() ? "Transaction added. CAD amounts are reference estimates."
                 : "Transaction added [PENDING CONVERSION]. No quote available; excluded from budget totals.";
         presenter.prepareSuccessView(new AddTransactionOutputData(transactions.findAll(), message));

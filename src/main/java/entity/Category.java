@@ -1,13 +1,6 @@
 package entity;
 
-import java.util.Objects;
-
-/**
- * A spending category such as "Food" or "Rent".
- *
- * PLACEHOLDER: category management belongs to Person C. Replace with the shared
- * Category entity when it exists.
- */
+/** A spending category such as "Food" or "Rent". */
 public final class Category {
 
     private final String name;
@@ -30,7 +23,11 @@ public final class Category {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name.toLowerCase());
+        int hash = 0;
+        for (int codePoint : name.codePoints().toArray()) {
+            hash = 31 * hash + Character.toLowerCase(Character.toUpperCase(codePoint));
+        }
+        return hash;
     }
 
     @Override

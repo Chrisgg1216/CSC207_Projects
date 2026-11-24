@@ -2,10 +2,7 @@ package usecase.port;
 
 import java.util.List;
 
-/**
- * Narrow port: category lookup. Person C owns category management and should
- * implement this.
- */
+/** Category lookup for transactions and budgets. */
 public interface CategoryDataAccess {
 
     boolean exists(String categoryName);

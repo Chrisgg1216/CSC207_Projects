@@ -5,6 +5,7 @@ import entity.Category;
 import entity.Money;
 import usecase.port.BudgetDataAccess;
 import usecase.port.CategoryDataAccess;
+import usecase.port.LedgerAccessException;
 
 /**
  * Use case: set (or replace) the monthly limit for one category.
@@ -55,7 +56,12 @@ public class SetBudgetInteractor implements SetBudgetInputBoundary {
         }
 
         boolean replaced = budgets.find(categoryName.trim(), input.getMonth()).isPresent();
-        budgets.save(new Budget(new Category(categoryName), input.getMonth(), limit));
+        try {
+            budgets.save(new Budget(new Category(categoryName), input.getMonth(), limit));
+        } catch (LedgerAccessException ex) {
+            presenter.prepareFailView(ex.getMessage());
+            return;
+        }
         presenter.prepareSuccessView(new SetBudgetOutputData(
                 categoryName.trim(), input.getMonth(), limit, replaced));
     }

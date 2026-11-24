@@ -6,6 +6,7 @@ import entity.TransactionType;
 
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -27,7 +28,9 @@ import java.util.List;
 
 /** Add transactions without blocking the Swing event thread during HTTP. */
 public class TransactionsPanel extends JPanel {
+    private final TransactionController controller;
     private final TransactionViewModel viewModel;
+    private final JComboBox<String> category;
     private final DefaultListModel<String> listModel = new DefaultListModel<>();
     private final JList<String> list = new JList<>(listModel);
     private final JTextArea message = new JTextArea(2, 40);
@@ -37,6 +40,7 @@ public class TransactionsPanel extends JPanel {
     public TransactionsPanel(TransactionController controller, TransactionViewModel viewModel,
                              List<String> categoryNames) {
         super(new BorderLayout(8, 8));
+        this.controller = controller;
         this.viewModel = viewModel;
         setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
@@ -44,7 +48,7 @@ public class TransactionsPanel extends JPanel {
         JComboBox<TransactionType> type = new JComboBox<>(TransactionType.values());
         type.setSelectedItem(TransactionType.SPENDING);
         type.getAccessibleContext().setAccessibleName("Income or spending");
-        JComboBox<String> category = new JComboBox<>(categoryNames.toArray(new String[0]));
+        category = new JComboBox<>(categoryNames.toArray(new String[0]));
         category.setSelectedIndex(-1);
         category.getAccessibleContext().setAccessibleName("Transaction category");
         JTextField amount = new JTextField(8);
@@ -74,8 +78,7 @@ public class TransactionsPanel extends JPanel {
         JPanel form = new JPanel();
         form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
         JLabel title = new JLabel("Transactions — base currency CAD");
-        JLabel prototypeNote = new JLabel("Milestone prototype: records are kept in memory for this session.");
-        for (JComponent part : new JComponent[] {title, prototypeNote, row1, row2}) {
+        for (JComponent part : new JComponent[] {title, row1, row2}) {
             part.setAlignmentX(Component.LEFT_ALIGNMENT);
             form.add(part);
         }
@@ -130,6 +133,15 @@ public class TransactionsPanel extends JPanel {
 
         viewModel.addPropertyChangeListener(event -> SwingUtilities.invokeLater(this::render));
         controller.refresh();
+    }
+
+    public void refresh(List<String> categories) {
+        Object selected = category.getSelectedItem();
+        category.setModel(new DefaultComboBoxModel<>(categories.toArray(String[]::new)));
+        category.setSelectedItem(selected != null && categories.contains(selected) ? selected : null);
+        if (add.isEnabled()) {
+            controller.refresh();
+        }
     }
 
     private static JLabel label(String text, Component target) {

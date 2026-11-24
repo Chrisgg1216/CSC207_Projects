@@ -7,7 +7,7 @@ Source code depends only inward: `framework -> adapter -> usecase -> entity`.
 
 ```
 +--------------------------------------------------------------+
-| framework  Swing panels, in-memory / JSON storage, CSV,     |
+| framework  Swing panels, in-memory / JSON storage, CSV,      |
 |            exchange-rate HTTP client                         |
 |  +--------------------------------------------------------+  |
 |  | adapter  Controller, Presenter, ViewModel              |  |
@@ -33,8 +33,20 @@ they must not know (Swing/AWT, `java.io`, `java.sql`, `java.net`, an outer packa
 | `usecase.<name>` | `InputBoundary`, `InputData`, `Interactor`, `OutputBoundary`, `OutputData` for each use case |
 | `usecase.port` | Interfaces the use cases need: `BudgetDataAccess`, `SpendingDataAccess`, `CategoryDataAccess` (plus A's and C's ports) |
 | `adapter` | `BudgetController`, `BudgetPresenter`, `BudgetViewModel` |
-| `framework` | `BudgetPanel`, `InMemory*DataAccess`, `PlaceholderPane` (later: JSON storage, CSV writer, HTTP client) |
+| `framework` | Swing panels, `JsonLedgerStore`, `CsvTransactionWriter`, and the exchange-rate HTTP client |
 | `app` | `ApplicationBuilder` (wires everything), `MainApp` (window with tabs) |
+
+## Shared ledger and exports
+
+`ApplicationBuilder` supplies one `JsonLedgerStore` through the transaction,
+budget and category ports. The JSON file stores the original transaction amounts
+and dated quotes. Category renames update the category list and all affected
+transactions and budgets in one atomic write. The file is replaced only after
+the new contents have been written successfully.
+
+The Summary and CSV use the same transaction selection and ordering for the
+chosen month. The CSV writer uses the same saved conversion as the summary and
+leaves CAD blank when a quote is pending.
 
 ## Use case flow: SetBudget
 
@@ -73,5 +85,5 @@ CheckBudgetStatus follows the same path. The Interactor also calls `SpendingData
 2. Add `usecase/<your_use_case>/` with the five boundary/interactor classes and any new port in `usecase/port/`.
 3. Add Controller, Presenter and ViewModel to `adapter/`.
 4. Add the Swing panel and storage/HTTP implementation to `framework/`.
-5. In `ApplicationBuilder`, add a `buildXxxView()` method and replace the `PlaceholderPane` for your tab.
+5. In `ApplicationBuilder`, add a `buildXxxView()` method and wire it to its tab.
 6. Run `mvn test`; `ArchitectureRulesTest` must still pass.

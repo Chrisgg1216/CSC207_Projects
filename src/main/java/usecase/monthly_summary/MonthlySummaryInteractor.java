@@ -3,10 +3,10 @@ package usecase.monthly_summary;
 import entity.Money;
 import entity.Transaction;
 import entity.TransactionType;
+import usecase.MonthlyTransactions;
 import usecase.port.TransactionDataAccess;
 
 import java.time.YearMonth;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,10 +31,7 @@ public final class MonthlySummaryInteractor implements MonthlySummaryInputBounda
             return;
         }
 
-        List<Transaction> monthlyTransactions = transactions.findAll().stream()
-                .filter(transaction -> YearMonth.from(transaction.date()).equals(month))
-                .sorted(Comparator.comparing(Transaction::date).reversed().thenComparing(Transaction::id))
-                .toList();
+        List<Transaction> monthlyTransactions = MonthlyTransactions.select(transactions, month);
 
         Money income = Money.zero(baseCurrency);
         Money spending = Money.zero(baseCurrency);

@@ -33,9 +33,9 @@ TransactionViewModel → TransactionsPanel`.
 - `app/ApplicationBuilder`: one repository instance used by Transactions and
   Budget. Summary remains Person C's placeholder.
 
-The UI captures inputs on the JavaFX thread, performs saving/HTTP on a background
+The UI captures inputs on the Swing event thread, performs saving/HTTP on a background
 Task, disables duplicate submission while working and updates controls on the
-JavaFX thread. Inner packages do not import JavaFX/HTTP/file libraries.
+Swing event thread. Inner packages do not import Swing/HTTP/file libraries.
 
 ## API evidence
 

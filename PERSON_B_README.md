@@ -4,7 +4,7 @@ Use cases: SetBudget, CheckBudgetStatus. Screen: BudgetPanel.
 
 ## Where things go in the team project
 Copy `src/main/java/*` and `src/test/java/*` into the shared project, on a branch such as
-`feature/set-budget`. Merge the pom.xml dependencies (javafx-controls, junit-jupiter) rather than
+`feature/set-budget`. Merge the pom.xml dependencies (junit-jupiter) rather than
 replacing the team's pom.xml.
 
 ## Placeholders to swap for the team's shared code
@@ -24,7 +24,7 @@ Threshold is DEFAULT_WARNING_THRESHOLD in CheckBudgetInteractor (changeable by c
 
 ## Run
 mvn test                      (46 tests, including ArchitectureRulesTest)
-mvn javafx:run                (main window with tabs: app.MainApp)
+mvn exec:java                 (main window with tabs: app.Launcher)
 
 ## Clean Architecture and GUI
 - docs/ARCHITECTURE.md: layers, dependency rule, SetBudget sequence diagram, how to add a feature.

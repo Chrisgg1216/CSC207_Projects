@@ -2,18 +2,20 @@ package framework;
 
 import adapter.BudgetController;
 import adapter.BudgetViewModel;
-import javafx.application.Platform;
-import javafx.collections.FXCollections;
-import javafx.geometry.Insets;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
 
+import javax.swing.BorderFactory;
+import javax.swing.DefaultListModel;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
+import java.awt.BorderLayout;
+import java.awt.FlowLayout;
 import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -22,51 +24,71 @@ import java.util.List;
  * The Budget tab: set a monthly limit per category and see spent / remaining /
  * status. Status is shown as text and a symbol, not only color.
  */
-public class BudgetPanel extends VBox {
+public class BudgetPanel extends JPanel {
 
     private final BudgetController controller;
     private final BudgetViewModel viewModel;
 
-    private final ComboBox<String> categoryBox = new ComboBox<>();
-    private final TextField limitField = new TextField();
-    private final TextField monthField = new TextField(YearMonth.now().toString());
-    private final ListView<String> statusList = new ListView<>();
-    private final Label messageLabel = new Label();
+    private final JComboBox<String> categoryBox;
+    private final JTextField limitField = new JTextField(8);
+    private final JTextField monthField = new JTextField(YearMonth.now().toString(), 7);
+    private final DefaultListModel<String> statusModel = new DefaultListModel<>();
+    private final JList<String> statusList = new JList<>(statusModel);
+    private final JTextArea messageArea = new JTextArea(2, 40);
 
     public BudgetPanel(BudgetController controller, BudgetViewModel viewModel, List<String> categoryNames) {
+        super(new BorderLayout(8, 8));
         this.controller = controller;
         this.viewModel = viewModel;
+        setBorder(BorderFactory.createEmptyBorder(12, 12, 12, 12));
 
-        setSpacing(10);
-        setPadding(new Insets(12));
+        categoryBox = new JComboBox<>(categoryNames.toArray(new String[0]));
+        categoryBox.setSelectedIndex(-1);
+        categoryBox.getAccessibleContext().setAccessibleName("Category");
 
-        categoryBox.setItems(FXCollections.observableArrayList(categoryNames));
-        categoryBox.setPromptText("Category");
-        categoryBox.setAccessibleText("Category");
+        monthField.getAccessibleContext().setAccessibleName("Month in the form year-month, for example 2026-11");
+        limitField.getAccessibleContext().setAccessibleName("Monthly limit in " + controller.getBaseCurrency());
 
-        limitField.setPromptText("Monthly limit (" + controller.getBaseCurrency() + ")");
-        limitField.setAccessibleText("Monthly limit in " + controller.getBaseCurrency());
+        JLabel monthLabel = new JLabel("Month (yyyy-MM):");
+        monthLabel.setLabelFor(monthField);
+        JLabel categoryLabel = new JLabel("Category:");
+        categoryLabel.setLabelFor(categoryBox);
+        JLabel limitLabel = new JLabel("Monthly limit (" + controller.getBaseCurrency() + "):");
+        limitLabel.setLabelFor(limitField);
 
-        monthField.setPrefColumnCount(7);
-        monthField.setAccessibleText("Month in the form year-month, for example 2026-11");
+        JButton setButton = new JButton("Set budget");
+        setButton.addActionListener(e -> onSetBudget());
+        JButton refreshButton = new JButton("Refresh status");
+        refreshButton.addActionListener(e -> onRefresh());
 
-        Button setButton = new Button("Set budget");
-        setButton.setOnAction(e -> onSetBudget());
-        Button refreshButton = new Button("Refresh status");
-        refreshButton.setOnAction(e -> onRefresh());
+        JPanel form = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+        form.add(monthLabel);
+        form.add(monthField);
+        form.add(categoryLabel);
+        form.add(categoryBox);
+        form.add(limitLabel);
+        form.add(limitField);
+        form.add(setButton);
+        form.add(refreshButton);
 
-        HBox form = new HBox(8, new Label("Month:"), monthField, categoryBox, limitField, setButton, refreshButton);
+        JPanel top = new JPanel(new BorderLayout());
+        top.add(new JLabel("Monthly budgets"), BorderLayout.NORTH);
+        top.add(form, BorderLayout.CENTER);
 
-        statusList.setAccessibleText("Budget status for each category");
-        statusList.setPlaceholder(new Label("No budget status to show yet."));
-        VBox.setVgrow(statusList, Priority.ALWAYS);
+        statusList.getAccessibleContext().setAccessibleName("Budget status for each category");
+        JScrollPane scroll = new JScrollPane(statusList);
 
-        messageLabel.setWrapText(true);
-        messageLabel.setAccessibleText("Message");
+        messageArea.setEditable(false);
+        messageArea.setLineWrap(true);
+        messageArea.setWrapStyleWord(true);
+        messageArea.setOpaque(false);
+        messageArea.getAccessibleContext().setAccessibleName("Message");
 
-        getChildren().addAll(new Label("Monthly budgets"), form, statusList, messageLabel);
+        add(top, BorderLayout.NORTH);
+        add(scroll, BorderLayout.CENTER);
+        add(messageArea, BorderLayout.SOUTH);
 
-        viewModel.addPropertyChangeListener(evt -> Platform.runLater(this::render));
+        viewModel.addPropertyChangeListener(evt -> SwingUtilities.invokeLater(this::render));
         render();
     }
 
@@ -75,7 +97,7 @@ public class BudgetPanel extends VBox {
         if (month == null) {
             return;
         }
-        controller.setBudget(categoryBox.getValue(), month, limitField.getText());
+        controller.setBudget((String) categoryBox.getSelectedItem(), month, limitField.getText());
         // Show the new status straight away so a warning appears immediately.
         controller.checkBudget(month);
     }
@@ -97,8 +119,11 @@ public class BudgetPanel extends VBox {
     }
 
     private void render() {
-        statusList.setItems(FXCollections.observableArrayList(viewModel.getLines()));
+        statusModel.clear();
+        for (String line : viewModel.getLines()) {
+            statusModel.addElement(line);
+        }
         String prefix = viewModel.isError() ? "Error: " : "";
-        messageLabel.setText(viewModel.getMessage().isEmpty() ? "" : prefix + viewModel.getMessage());
+        messageArea.setText(viewModel.getMessage().isEmpty() ? "" : prefix + viewModel.getMessage());
     }
 }

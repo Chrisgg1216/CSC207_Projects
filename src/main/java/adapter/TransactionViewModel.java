@@ -4,7 +4,7 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 import java.util.List;
 
-/** UI-neutral screen state; JavaFX is confined to framework. */
+/** UI-neutral screen state; Swing is confined to framework. */
 public class TransactionViewModel {
     private final PropertyChangeSupport changes = new PropertyChangeSupport(this);
     private List<String> lines = List.of();

@@ -1,23 +1,26 @@
 package app;
 
-import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.stage.Stage;
+import javax.swing.JFrame;
+import javax.swing.SwingUtilities;
+import javax.swing.WindowConstants;
 
 /**
  * Entry point: the main window with one tab per feature.
- * Run with: mvn javafx:run
+ * Run with: app.Launcher (IDE) or mvn exec:java
  */
-public class MainApp extends Application {
+public class MainApp {
 
-    @Override
-    public void start(Stage stage) {
-        stage.setTitle("Budgeting App");
-        stage.setScene(new Scene(new ApplicationBuilder().buildTabs(), 960, 520));
-        stage.show();
+    /** Creates and shows the window. Must be called on the Swing event thread. */
+    public static void show() {
+        JFrame frame = new JFrame("Budgeting App");
+        frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        frame.setContentPane(new ApplicationBuilder().buildTabs());
+        frame.setSize(960, 520);
+        frame.setLocationRelativeTo(null);
+        frame.setVisible(true);
     }
 
     public static void main(String[] args) {
-        launch(args);
+        SwingUtilities.invokeLater(MainApp::show);
     }
 }

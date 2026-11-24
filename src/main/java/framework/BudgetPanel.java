@@ -4,6 +4,7 @@ import adapter.BudgetController;
 import adapter.BudgetViewModel;
 
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -15,6 +16,7 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.FlowLayout;
 import java.time.YearMonth;
 import java.time.format.DateTimeParseException;
@@ -61,15 +63,24 @@ public class BudgetPanel extends JPanel {
         JButton refreshButton = new JButton("Refresh status");
         refreshButton.addActionListener(e -> onRefresh());
 
-        JPanel form = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
-        form.add(monthLabel);
-        form.add(monthField);
-        form.add(categoryLabel);
-        form.add(categoryBox);
-        form.add(limitLabel);
-        form.add(limitField);
-        form.add(setButton);
-        form.add(refreshButton);
+        // Two rows, so no button is clipped when the window is narrow.
+        JPanel fields = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+        fields.add(monthLabel);
+        fields.add(monthField);
+        fields.add(categoryLabel);
+        fields.add(categoryBox);
+        fields.add(limitLabel);
+        fields.add(limitField);
+        JPanel buttons = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 4));
+        buttons.add(setButton);
+        buttons.add(refreshButton);
+
+        JPanel form = new JPanel();
+        form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
+        fields.setAlignmentX(Component.LEFT_ALIGNMENT);
+        buttons.setAlignmentX(Component.LEFT_ALIGNMENT);
+        form.add(fields);
+        form.add(buttons);
 
         JPanel top = new JPanel(new BorderLayout());
         top.add(new JLabel("Monthly budgets"), BorderLayout.NORTH);
@@ -106,6 +117,35 @@ public class BudgetPanel extends JPanel {
         YearMonth month = readMonth();
         if (month != null) {
             controller.checkBudget(month);
+        }
+    }
+
+    /** Re-checks the month shown in the box. Used when this tab is opened. */
+    public void refresh() {
+        YearMonth month = shownMonth();
+        if (month != null) {
+            controller.checkBudget(month);
+        }
+    }
+
+    /**
+     * Observer callback: a transaction changed spending in {@code month}. Safe to call
+     * from any thread. The status is re-checked only if that month is the one on screen.
+     */
+    public void onSpendingChanged(YearMonth month) {
+        SwingUtilities.invokeLater(() -> {
+            if (month.equals(shownMonth())) {
+                controller.checkBudget(month);
+            }
+        });
+    }
+
+    /** The month typed in the box, or null if it can't be read (no error message shown). */
+    private YearMonth shownMonth() {
+        try {
+            return YearMonth.parse(monthField.getText().trim());
+        } catch (DateTimeParseException ex) {
+            return null;
         }
     }
 

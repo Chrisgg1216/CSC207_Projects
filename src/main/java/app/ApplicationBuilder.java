@@ -17,6 +17,7 @@ import framework.BudgetPanel;
 import framework.InMemoryBudgetDataAccess;
 import framework.InMemoryCategoryDataAccess;
 import framework.MonthlySummaryPanel;
+import framework.SpendingEventBus;
 import javax.swing.JComponent;
 import javax.swing.JTabbedPane;
 import usecase.check_budget.CheckBudgetInteractor;
@@ -50,17 +51,22 @@ public class ApplicationBuilder {
     // Person A: replace with an adapter over TransactionDataAccess.
     private final TransactionDataAccess transactions = new InMemoryTransactionDataAccess();
     private final SpendingDataAccess spending = new TransactionSpendingDataAccess(transactions);
+    // Observer: Transactions announce changes, Budget listens and re-checks itself.
+    private final SpendingEventBus spendingEvents = new SpendingEventBus();
 
     public JTabbedPane buildTabs() {
         JTabbedPane tabs = new JTabbedPane();
+        BudgetPanel budget = buildBudgetView();
         MonthlySummaryPanel summary = buildSummaryView();
         tabs.addTab("Transactions", buildTransactionsView());
-        tabs.addTab("Budget", buildBudgetView());
+        tabs.addTab("Budget", budget);
         tabs.addTab("Summary", summary);
-        // The Summary reads the shared transactions, so refresh it whenever its tab is opened.
+        // Budget and Summary read the shared transactions, so refresh them when their tab is opened.
         tabs.addChangeListener(event -> {
             if (tabs.getSelectedComponent() == summary) {
                 summary.refresh();
+            } else if (tabs.getSelectedComponent() == budget) {
+                budget.refresh();
             }
         });
         tabs.setSelectedIndex(0);
@@ -68,14 +74,16 @@ public class ApplicationBuilder {
     }
 
     /** Person B (budgets and alerts). */
-    private JComponent buildBudgetView() {
+    private BudgetPanel buildBudgetView() {
         BudgetViewModel viewModel = new BudgetViewModel();
         BudgetPresenter presenter = new BudgetPresenter(viewModel);
         BudgetController controller = new BudgetController(
                 new SetBudgetInteractor(budgetStorage, categories, presenter),
                 new CheckBudgetInteractor(budgetStorage, spending, presenter),
                 BASE_CURRENCY);
-        return new BudgetPanel(controller, viewModel, categories.findAllNames());
+        BudgetPanel panel = new BudgetPanel(controller, viewModel, categories.findAllNames());
+        spendingEvents.addListener(panel::onSpendingChanged);
+        return panel;
     }
 
     /** Person A: one shared repository supplies both Transactions and Budget. */
@@ -84,7 +92,7 @@ public class ApplicationBuilder {
         TransactionPresenter presenter = new TransactionPresenter(viewModel);
         TransactionController controller = new TransactionController(new AddTransactionInteractor(
                 transactions, categories, new BankOfCanadaExchangeRateGateway(), presenter,
-                Clock.systemDefaultZone()));
+                Clock.systemDefaultZone(), spendingEvents));
         return new TransactionsPanel(controller, viewModel, categories.findAllNames());
     }
 

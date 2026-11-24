@@ -6,11 +6,13 @@ import entity.Transaction;
 import usecase.port.CategoryDataAccess;
 import usecase.port.ExchangeRateGateway;
 import usecase.port.ExchangeRateUnavailableException;
+import usecase.port.SpendingChangeNotifier;
 import usecase.port.TransactionDataAccess;
 
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
@@ -23,15 +25,24 @@ public class AddTransactionInteractor implements AddTransactionInputBoundary {
     private final ExchangeRateGateway rates;
     private final AddTransactionOutputBoundary presenter;
     private final Clock clock;
+    private final SpendingChangeNotifier notifier;
 
     public AddTransactionInteractor(TransactionDataAccess transactions, CategoryDataAccess categories,
                                     ExchangeRateGateway rates, AddTransactionOutputBoundary presenter,
                                     Clock clock) {
+        this(transactions, categories, rates, presenter, clock, SpendingChangeNotifier.NONE);
+    }
+
+    /** The notifier is told after each saved transaction, so other screens can update themselves. */
+    public AddTransactionInteractor(TransactionDataAccess transactions, CategoryDataAccess categories,
+                                    ExchangeRateGateway rates, AddTransactionOutputBoundary presenter,
+                                    Clock clock, SpendingChangeNotifier notifier) {
         this.transactions = transactions;
         this.categories = categories;
         this.rates = rates;
         this.presenter = presenter;
         this.clock = clock;
+        this.notifier = notifier;
     }
 
     @Override
@@ -58,6 +69,7 @@ public class AddTransactionInteractor implements AddTransactionInputBoundary {
         String message = quote.isPresent() ? "Transaction added. CAD amounts are reference estimates."
                 : "Transaction added [PENDING CONVERSION]. No quote available; excluded from budget totals.";
         presenter.prepareSuccessView(new AddTransactionOutputData(transactions.findAll(), message));
+        notifier.spendingChanged(YearMonth.from(input.date()));
     }
 
     private String validate(AddTransactionInputData input) {
